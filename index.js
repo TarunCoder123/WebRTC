@@ -47,3 +47,10 @@ pc2.ontrack = e => {
 };
 
 var update = (div, msg) => div.innerHTML = msg;
+
+/***
+ * 
+ * SFU is the google meet architecture and there is no mess architecture if you connect to the gmeet than the you are connected to the server of the 
+ * gmeet not to the every browser
+ * 
+ */
