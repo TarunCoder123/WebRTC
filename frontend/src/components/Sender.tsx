@@ -9,32 +9,30 @@ export function Sender() {
         const socket = new WebSocket('ws://localhost:8080');
         socket.onopen = () => {
             socket.send(JSON.stringify({ type: 'sender' }));
-            console.log("🚀 ~ Sender ~ socket:", socket);
+            // console.log("🚀 ~ Sender ~ socket:", socket);
             
         }
-
+        setSocket(socket);
     }, []);
 
     async function startSendingVideo() {
-        // if (!socket) return;
+        if (!socket) return;
         // create an RTCPeerConnection Instance
         const pc = new RTCPeerConnection();
-        console.log(pc,"pc");
         // create an offer
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        console.log(pc.localDescription,"pc.localDescription");
-        socket?.send(JSON.stringify({ types: 'createOffer', sdp: pc.localDescription }));
+        socket?.send(JSON.stringify({ type: 'createOffer', sdp: pc.localDescription }));
 
 
-        // socket.onmessage = async (event) => {
-        //     const message = JSON.parse(event.data);
-        //     if (message.type === 'createAnswer') {
-        //        pc.setRemoteDescription(message.sdp);
-        //     } else if (message.type === 'iceCandidates') {
+        socket.onmessage = async (event) => {
+            const message = JSON.parse(event.data);
+            if (message.type === 'createAnswer') {
+               pc.setRemoteDescription(message.sdp);
+            } else if (message.type === 'iceCandidates') {
 
-        //     }
-        // }
+            }
+        }
 
     }
 
