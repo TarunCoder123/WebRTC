@@ -14,11 +14,11 @@ wss.on('connection', function connection(ws) {
         //identify the sender
         if (message.type === 'sender') {
             console.log('sender set');
-            receiverSocket = ws;
+            senderSocket = ws;
         } else if (message.type === 'receiver') {
             //identify the receiver
             console.log('receiver set');
-            senderSocket = ws;
+            receiverSocket = ws;
         } else if (message.type === 'createOffer') {
             //create offer
             if (ws !== senderSocket) {

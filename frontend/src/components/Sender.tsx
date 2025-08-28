@@ -10,27 +10,38 @@ export function Sender() {
         socket.onopen = () => {
             socket.send(JSON.stringify({ type: 'sender' }));
             // console.log("🚀 ~ Sender ~ socket:", socket);
-            
+
         }
         setSocket(socket);
     }, []);
 
     async function startSendingVideo() {
         if (!socket) return;
-        // create an RTCPeerConnection Instance
+        // create an RTCPeerConnection Instance but when negotiation
         const pc = new RTCPeerConnection();
         // create an offer
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket?.send(JSON.stringify({ type: 'createOffer', sdp: pc.localDescription }));
+        pc.onnegotiationneeded = async () => {
+            console.log("onnegotiationneeded");
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket?.send(JSON.stringify({ type: 'createOffer', sdp: pc.localDescription }));
+        }
+        //need video/audio to re trigger this
+        pc.onicecandidate = (event) => {
+            console.log(event);
+            if (event.candidate) {
+                socket?.send(JSON.stringify({ type: 'iceCandidate', candidate: event.candidate }));
+            }
+        }
+
 
 
         socket.onmessage = async (event) => {
             const message = JSON.parse(event.data);
             if (message.type === 'createAnswer') {
-               pc.setRemoteDescription(message.sdp);
+                pc.setRemoteDescription(message.sdp);
             } else if (message.type === 'iceCandidates') {
-
+                pc.addIceCandidate(message.candidate);
             }
         }
 
