@@ -27,6 +27,10 @@ export function Receiver() {
                 await pc.setLocalDescription(answer);
                 console.log("answer sdp created on the receiver side");
                 socket?.send(JSON.stringify({ type: 'createAnswer', sdp: pc.localDescription }));
+
+                pc.ontrack=(event)=>{
+                    console.log(event,"event");
+                }
             } else if (message.type === 'iceCandidates') {
                 if (pc !== null) {
                     //@ts-ignore

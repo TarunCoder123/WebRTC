@@ -10,12 +10,12 @@ export function Sender() {
         socket.onopen = () => {
             socket.send(JSON.stringify({ type: 'sender' }));
             // console.log("🚀 ~ Sender ~ socket:", socket);
-
         }
         setSocket(socket);
     }, []);
 
     async function startSendingVideo() {
+        console.log("aay");
         if (!socket) return;
         // create an RTCPeerConnection Instance but when negotiation
         const pc = new RTCPeerConnection();
@@ -34,9 +34,7 @@ export function Sender() {
             }
         }
 
-
-
-        socket.onmessage = async (event) => {
+        socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
             if (message.type === 'createAnswer') {
                 pc.setRemoteDescription(message.sdp);
@@ -45,8 +43,10 @@ export function Sender() {
             }
         }
 
-    }
+        const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:true});
+        pc.addTrack(stream.getVideoTracks()[0]);
 
+    }
 
     return <div>
         sender

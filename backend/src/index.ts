@@ -22,7 +22,7 @@ wss.on('connection', function connection(ws) {
         } else if (message.type === 'createOffer') {
             //create offer
             if (ws !== senderSocket) {
-                console.log('ws semder');
+                console.log('ws sender');
                 return;
             }
             console.log("offer recevied");
@@ -42,7 +42,7 @@ wss.on('connection', function connection(ws) {
                 senderSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
             }
         }
-        // console.log(message, "message");
+         console.log(message, "message without any type");
     });
 });
 
