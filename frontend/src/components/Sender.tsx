@@ -1,56 +1,73 @@
 import { useEffect, useState } from "react"
 
-export function Sender() {
-
+export const Sender = () => {
     const [socket, setSocket] = useState<WebSocket | null>(null);
-    // const [pc,setPc] = useState<RTCPeerConnection | null>(null);
+    const [pc, setPC] = useState<RTCPeerConnection | null>(null);
 
     useEffect(() => {
         const socket = new WebSocket('ws://localhost:8080');
-        socket.onopen = () => {
-            socket.send(JSON.stringify({ type: 'sender' }));
-            // console.log("🚀 ~ Sender ~ socket:", socket);
-        }
         setSocket(socket);
+        socket.onopen = () => {
+            socket.send(JSON.stringify({
+                type: 'sender'
+            }));
+        }
     }, []);
 
-    async function startSendingVideo() {
-        console.log("aay");
-        if (!socket) return;
-        // create an RTCPeerConnection Instance but when negotiation
-        const pc = new RTCPeerConnection();
-        // create an offer
-        pc.onnegotiationneeded = async () => {
-            console.log("onnegotiationneeded");
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            socket?.send(JSON.stringify({ type: 'createOffer', sdp: pc.localDescription }));
-        }
-        //need video/audio to re trigger this
-        pc.onicecandidate = (event) => {
-            console.log(event);
-            if (event.candidate) {
-                socket?.send(JSON.stringify({ type: 'iceCandidate', candidate: event.candidate }));
-            }
+    const initiateConn = async () => {
+
+        if (!socket) {
+            alert("Socket not found");
+            return;
         }
 
-        socket.onmessage = (event) => {
+        socket.onmessage = async (event) => {
             const message = JSON.parse(event.data);
             if (message.type === 'createAnswer') {
-                pc.setRemoteDescription(message.sdp);
-            } else if (message.type === 'iceCandidates') {
+                await pc.setRemoteDescription(message.sdp);
+            } else if (message.type === 'iceCandidate') {
                 pc.addIceCandidate(message.candidate);
             }
         }
 
-        const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:true});
-        pc.addTrack(stream.getVideoTracks()[0]);
+        const pc = new RTCPeerConnection();
+        setPC(pc);
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                socket?.send(JSON.stringify({
+                    type: 'iceCandidate',
+                    candidate: event.candidate
+                }));
+            }
+        }
 
+        pc.onnegotiationneeded = async () => {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket?.send(JSON.stringify({
+                type: 'createOffer',
+                sdp: pc.localDescription
+            }));
+        }
+            
+        getCameraStreamAndSend(pc);
+    }
+
+    const getCameraStreamAndSend = (pc: RTCPeerConnection) => {
+        navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.play();
+            // this is wrong, should propogate via a component
+            document.body.appendChild(video);
+            stream.getTracks().forEach((track) => {
+                pc?.addTrack(track);
+            });
+        });
     }
 
     return <div>
-        sender
-        <div>sdfsdf</div>
-        <button onClick={startSendingVideo}>Send vsdzdideo</button>
+        Sender
+        <button onClick={initiateConn}> Send data </button>
     </div>
 }

@@ -1,54 +1,48 @@
-import { useEffect, useRef } from "react";
 
-export function Receiver() {
+import { useEffect } from "react"
 
-    const videoRef=useRef<HTMLVideoElement>(null);
 
+export const Receiver = () => {
+    
     useEffect(() => {
         const socket = new WebSocket('ws://localhost:8080');
         socket.onopen = () => {
-            socket.send(JSON.stringify({ type: 'receiver' }));
+            socket.send(JSON.stringify({
+                type: 'receiver'
+            }));
         }
-
-
-        socket.onmessage = async (event) => {
-            const message = JSON.parse(event.data);
-            console.log("🚀 ~ Receiver ~ message:", message)
-            let pc: RTCPeerConnection | null = null;
-            if (message.type === 'createOffer') {
-                // create an answer
-                pc = new RTCPeerConnection();
-                pc.setRemoteDescription(message.sdp);
-                pc.onicecandidate = (event) => {
-                    console.log(event);
-                    if (event.candidate) {
-                        socket?.send(JSON.stringify({ type: 'iceCandidate', candidate: event.candidate }));
-                    }
-                }
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                console.log("answer sdp created on the receiver side");
-                socket?.send(JSON.stringify({ type: 'createAnswer', sdp: pc.localDescription }));
-
-                pc.ontrack=(event)=>{
-                    console.log(event,"event");
-                    if(videoRef.current){
-                    videoRef.current.srcObject=new MediaStream([event.track]);
-                    // videoRef.current.play();
-                    }
-                }
-            } else if (message.type === 'iceCandidates') {
-                if (pc !== null) {
-                    //@ts-ignore
-                    pc?.addIceCandidate(message.candidate);
-                }
-            }
-        }
+        startReceiving(socket);
     }, []);
 
+    function startReceiving(socket: WebSocket) {
+        const video = document.createElement('video');
+        document.body.appendChild(video);
 
-    return <>
-        Receiver
-        <video ref={videoRef}></video>
-    </>
+        const pc = new RTCPeerConnection();
+        pc.ontrack = (event) => {
+            video.srcObject = new MediaStream([event.track]);
+            video.play();
+        }
+
+        socket.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            if (message.type === 'createOffer') {
+                pc.setRemoteDescription(message.sdp).then(() => {
+                    pc.createAnswer().then((answer) => {
+                        pc.setLocalDescription(answer);
+                        socket.send(JSON.stringify({
+                            type: 'createAnswer',
+                            sdp: answer
+                        }));
+                    });
+                });
+            } else if (message.type === 'iceCandidate') {
+                pc.addIceCandidate(message.candidate);
+            }
+        }
+    }
+
+    return <div>
+        
+    </div>
 }
