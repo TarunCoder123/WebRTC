@@ -24,7 +24,9 @@ export const Sender = () => {
         socket.onmessage = async (event) => {
             const message = JSON.parse(event.data);
             if (message.type === 'createAnswer') {
+                console.log(message.sdp);
                 await pc.setRemoteDescription(message.sdp);
+                console.log(pc.remoteDescription,"pc.remoteDescription");
             } else if (message.type === 'iceCandidate') {
                 pc.addIceCandidate(message.candidate);
             }

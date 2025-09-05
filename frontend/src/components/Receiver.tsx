@@ -1,8 +1,10 @@
 
-import { useEffect } from "react"
+import { useEffect , useState} from "react"
 
 
 export const Receiver = () => {
+
+    const [one,setOne]=useState<Number>(0);
     
     useEffect(() => {
         const socket = new WebSocket('ws://localhost:8080');
@@ -43,6 +45,6 @@ export const Receiver = () => {
     }
 
     return <div>
-        
+        receiver
     </div>
 }

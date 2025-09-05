@@ -3,7 +3,8 @@ import { WebSocket, WebSocketServer } from 'ws';
 const wss = new WebSocketServer({ port: 8080 });
 
 let senderSocket: null | WebSocket = null;
-let receiverSocket: null | WebSocket = null;
+// let receiverSocket: null | WebSocket = null;
+const receivers:Set<WebSocket> = new Set();
 
 wss.on('connection', function connection(ws) {
   ws.on('error', console.error);
@@ -13,23 +14,43 @@ wss.on('connection', function connection(ws) {
     if (message.type === 'sender') {
       senderSocket = ws;
     } else if (message.type === 'receiver') {
-      receiverSocket = ws;
+        receivers.add(ws);
+        console.log('registered the receviers');
+    //   receiverSocket = ws;
     } else if (message.type === 'createOffer') {
       if (ws !== senderSocket) {
         return;
       }
-      receiverSocket?.send(JSON.stringify({ type: 'createOffer', sdp: message.sdp }));
+      receivers.forEach((receiver)=>{
+        receiver.send(JSON.stringify({type: 'createOffer', sdp: message.sdp }));
+      });
+    //   receiverSocket?.send(JSON.stringify({ type: 'createOffer', sdp: message.sdp }));
     } else if (message.type === 'createAnswer') {
-        if (ws !== receiverSocket) {
-          return;
+        if (ws === senderSocket) {
+            senderSocket?.send(JSON.stringify({ type: 'createAnswer', sdp: message.sdp }));
         }
-        senderSocket?.send(JSON.stringify({ type: 'createAnswer', sdp: message.sdp }));
     } else if (message.type === 'iceCandidate') {
       if (ws === senderSocket) {
-        receiverSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
-      } else if (ws === receiverSocket) {
+        // broadcast ICE candidates from sender → all receivers
+        receivers.forEach((receiver) => {
+            receiver.send(JSON.stringify({ type: "iceCandidate", candidate: message.candidate }));
+          });
+        // receiverSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
+      } else if (receivers.has(ws)) {
+        //forward the ICE candidate from receiver -> sender
         senderSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
       }
     }
   });
+
+
+  ws.on("close", () => {
+    if (ws === senderSocket) {
+      senderSocket = null;
+    } else if (receivers.has(ws)) {
+      receivers.delete(ws);
+    }
+    console.log("Client disconnected");
+  });
+
 });
