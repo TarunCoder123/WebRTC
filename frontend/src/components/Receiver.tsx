@@ -1,10 +1,11 @@
 
-import { useEffect , useState} from "react"
+import { useEffect , useRef, useState} from "react"
 
 
 export const Receiver = () => {
 
-    const [one,setOne]=useState<Number>(0);
+    const [one,setOne]=useState<number>(0);
+    const videoRef = useRef<HTMLVideoElement>(null);
     
     useEffect(() => {
         const socket = new WebSocket('ws://localhost:8080');
@@ -17,14 +18,26 @@ export const Receiver = () => {
     }, []);
 
     function startReceiving(socket: WebSocket) {
-        const video = document.createElement('video');
-        document.body.appendChild(video);
+        // const video = document.createElement('video');
+        // document.body.appendChild(video);
+
+        // const pc = new RTCPeerConnection();
+        // pc.ontrack = (event) => {
+        //     video.srcObject = new MediaStream([event.track]);
+        //     video.play();
+        // }
 
         const pc = new RTCPeerConnection();
-        pc.ontrack = (event) => {
-            video.srcObject = new MediaStream([event.track]);
-            video.play();
+        const remoteStream = new MediaStream();
+        if (videoRef.current) {
+          videoRef.current.srcObject = remoteStream;
         }
+    
+        pc.ontrack = (event) => {
+          event.streams[0].getTracks().forEach((track) => {
+            remoteStream.addTrack(track);
+          });
+        };
 
         socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
@@ -46,5 +59,8 @@ export const Receiver = () => {
 
     return <div>
         receiver
+        <span>{one}</span>
+        <button onClick={()=>{setOne(c=>c+1)}}>increase</button>
+        <video ref={videoRef} autoPlay playsInline controls />
     </div>
 }
