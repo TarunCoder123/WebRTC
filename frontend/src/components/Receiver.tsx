@@ -34,6 +34,7 @@ export const Receiver = () => {
         }
     
         pc.ontrack = (event) => {
+            console.log(event,"event on receiver");
           event.streams[0].getTracks().forEach((track) => {
             remoteStream.addTrack(track);
           });
@@ -61,6 +62,6 @@ export const Receiver = () => {
         receiver
         <span>{one}</span>
         <button onClick={()=>{setOne(c=>c+1)}}>increase</button>
-        <video ref={videoRef} autoPlay playsInline controls />
+        {/* <video ref={videoRef} autoPlay playsInline controls /> */}
     </div>
 }

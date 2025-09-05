@@ -63,7 +63,7 @@ export const Sender = () => {
             // this is wrong, should propogate via a component
             document.body.appendChild(video);
             stream.getTracks().forEach((track) => {
-                pc?.addTrack(track);
+                pc?.addTrack(track,stream);
             });
         });
     }
